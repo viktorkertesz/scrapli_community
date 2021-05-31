@@ -1,3 +1,4 @@
+"""scrapli_community.transport.asyncscp.extension"""
 import re
 import hashlib
 import shutil
@@ -12,6 +13,13 @@ import aiofiles
 
 @dataclass()
 class FileCheckResult:
+    """
+    hash - hash value string (empty on error)
+
+    size - size in bytes
+
+    free - free space in bytes (0 on error)
+    """
     hash: str  # hash value string
     size: int  # size in bytes
     free: int  # free space in bytes
@@ -19,6 +27,11 @@ class FileCheckResult:
 
 @dataclass()
 class SCPConnectionParameterType(TypedDict):
+    """
+    Collection of authentication data needed to open a second SCP connection to the device.
+
+    (username, password, host, options)
+    """
     username: str
     password: str
     host: str
@@ -27,43 +40,89 @@ class SCPConnectionParameterType(TypedDict):
 
 @dataclass()
 class FileTransferResult:
+    """
+        exists - True if destination existed or created
+
+        transferred - True if file was transferred
+
+        verified - True if files are identical (hashes match)
+    """
     exists: bool
     transferred: bool
     verified: bool
 
 
 class AsyncSCPFeature(AsyncNetworkDriver, ABC):
+    """
+    This class extends a driver with SCP capabilities
+
+    You need to implement device specific methods. If your device does not support that method, just return a value
+    described in the abstract methods.
+    """
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
     @abstractmethod
-    async def check_device_file(self, device_fs: str, filename: str) -> FileCheckResult:
+    async def check_device_file(self, device_fs: Optional[str], filename: str) -> FileCheckResult:
         """
         Check remote file and storage space
         Returning empty hash means error accessing the file
+
         Args:
-            device_fs: filesystem on device (e.g. disk0:/)
+            device_fs (str): filesystem on device (e.g. disk0:/)
             filename: file to examine
 
         Returns:
-            FileCheckResult: returns hash, size and free space. Empty/zero on error for each.
+            FileCheckResult
         """
         ...
 
     @abstractmethod
-    async def _ensure_scp_capability(self):
+    async def _ensure_scp_capability(self, force: bool = True) -> bool:
+        """
+        Ensure device is capable of using scp.
+
+        Args:
+            force: Try reconfigure device if it doesn't support scp
+
+        Returns:
+            bool: True if device supports scp now
+        """
+        ...
+
+    @abstractmethod
+    async def _cleanup_after_transfer(self) -> None:
+        """
+        Device specific cleanup procedure if needed. Useful to restore configuration in case _ensure_scp_capability
+        reconfigured the device.
+
+        Returns:
+            None
+        """
+        ...
+
+    @abstractmethod
+    async def _get_device_fs(self) -> Optional[str]:
+        """
+        Device specific drive detection.
+
+        Returns:
+            Drive as a string. E.g. disk0:/ or flash0:/
+            None, if drive not detected or detection is not supported
+        """
         ...
 
     @classmethod
     async def check_local_file(cls, device_fs: Optional[str], file_name: str) -> FileCheckResult:
         """
         Check local file and storage space
-        Returning empty hash means error accessing the file
+
         Args:
-            file_name: local file to examine
+            device_fs: If specified, this path will be checked for free space. Else path will be taken from `file_name`
+            file_name: local file to examine. This should be the full path of local file
 
         Returns:
-            FileCheckResult: returns hash, size and free space. Empty/zero on error for each.
+            FileCheckResult
         """
         try:
             async with aiofiles.open(file_name, "rb") as f:
@@ -119,20 +178,21 @@ class AsyncSCPFeature(AsyncNetworkDriver, ABC):
         2. existence of file at destination (also with hash)
         3. available space at destination
         4. scp enablement on device (and tries to turn it on if needed)
-        Transfer can be considered as success if the result has `verified` set to True
+        Transfer can be considered as success if the result has `verified` set to True.
+        The file won't be transferred if the hash of the files on local/device are the same!
 
         Args:
             operation: put/get file to/from device
             src: source file name
             dst: destination file name
-            hash_verify: True if checksum verification is needed
+            verify_hash: True if checksum verification is needed
             device_fs: IOS device filesystem (autodetect if empty)
             overwrite: If set to True, destination will be overwritten in case hash verification fails
             cleanup: If set to True, call the cleanup procedure to restore configuration if it was altered
             progress_handler: function to call by file copy (used by asyncssh.scp function)
 
         Returns:
-            FileTransferResult: returns exists, transferred, verified results
+            FileTransferResult
         """
 
         result = FileTransferResult(False, False, False)
