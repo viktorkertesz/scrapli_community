@@ -55,7 +55,7 @@ class AsyncSCPFeature(AsyncNetworkDriver, ABC):
         ...
 
     @classmethod
-    async def check_local_file(cls, file_name: str) -> FileCheckResult:
+    async def check_local_file(cls, device_fs: Optional[str], file_name: str) -> FileCheckResult:
         """
         Check local file and storage space
         Returning empty hash means error accessing the file
@@ -73,15 +73,15 @@ class AsyncSCPFeature(AsyncNetworkDriver, ABC):
             file_size = 0
             file_hash = ""
         try:
-            path = os.path.dirname(file_name)
+            path = device_fs if device_fs else os.path.dirname(file_name)
             # check free space of directory of the file or the local dir
             free_space = shutil.disk_usage(path if path else ".").free
         except FileNotFoundError:
             free_space = 0
         return FileCheckResult(hash=file_hash, size=file_size, free=free_space)
 
-    async def async_file_transfer(self, operation: Literal['get', 'put'], src: str, dst: str,
-                                  progress_handler: Optional[Callable] = None) -> None:
+    async def _async_file_transfer(self, operation: Literal['get', 'put'], src: str, dst: str,
+                                   progress_handler: Optional[Callable] = None) -> None:
         """
         SCP a file from device to localhost
 
@@ -109,8 +109,8 @@ class AsyncSCPFeature(AsyncNetworkDriver, ABC):
             else:
                 raise ValueError(f"Invalid operation: {operation}")
 
-    async def file_transfer(self, operation: Literal['get', 'put'], src: str, dst: str, hash_verify: bool = True,
-                            device_fs: str = "", overwrite: bool = False,
+    async def file_transfer(self, operation: Literal['get', 'put'], src: str, dst: str, verify_hash: bool = True,
+                            device_fs: str = "", overwrite: bool = False, cleanup: bool = True,
                             progress_handler: Optional[Callable] = None) -> FileTransferResult:
         """
         Cisco IOS XE file transfer
@@ -128,6 +128,7 @@ class AsyncSCPFeature(AsyncNetworkDriver, ABC):
             hash_verify: True if checksum verification is needed
             device_fs: IOS device filesystem (autodetect if empty)
             overwrite: If set to True, destination will be overwritten in case hash verification fails
+            cleanup: If set to True, call the cleanup procedure to restore configuration if it was altered
             progress_handler: function to call by file copy (used by asyncssh.scp function)
 
         Returns:
@@ -135,8 +136,8 @@ class AsyncSCPFeature(AsyncNetworkDriver, ABC):
         """
 
         result = FileTransferResult(False, False, False)
-        device_file_data = FileCheckResult("", 0, 0)
-        local_file_data = FileCheckResult("", 0, 0)
+        src_file_data = FileCheckResult("", 0, 0)
+        dst_file_data = FileCheckResult("", 0, 0)
 
         # set destination filename to source if missing
         if dst == "" or dst == ".":
@@ -144,61 +145,65 @@ class AsyncSCPFeature(AsyncNetworkDriver, ABC):
 
         # Detect default filesystem the device use
         if not device_fs:
-            #  Enable mode needed
-            await self.acquire_priv(self.default_desired_privilege_level)
-            output = await self.send_command("dir | i Directory of (.*)")
-            m = re.match("Directory of (?P<fs>.*)", output.result, re.M)
-            device_fs = m.group('fs')
+            device_fs = await self._get_device_fs()
 
         if operation == 'get':
-            if hash_verify:
-                # gather info on remote side
-                device_file_data = await self.check_device_file(device_fs, src)
-                self.logger.debug(f"device file {src}: {device_file_data}")
-                if not device_file_data.hash:
-                    # source file cannot be found, we are done here
-                    self.logger.warning(f"Source file {src} does NOT exists!")
-                    return result
-                # gather info on local file
-                local_file_data = await self.check_local_file(dst)
-                self.logger.debug(f"local file {dst}: {local_file_data}")
-                # check if local file exists
-                if local_file_data.hash:
-                    result.exists = True
-                # check if local file has the same hash as source
-                if local_file_data.hash and device_file_data.hash == local_file_data.hash:
-                    result.verified = True
-                    # no need to transfer file
-                    self.logger.info(f"{dst} file already exists at destination and verified OK")
-                    return result
-            if local_file_data.hash and not overwrite:
-                # if hash does not match and we want to overwrite
-                self.logger.warning(f"{dst} file would NOT be overwritten!")
-                return result
-            # check if we have enough free space to transfer the file
-            if local_file_data.free < device_file_data.size:
-                self.logger.warning(f"{dst} file is too big ({device_file_data.size}). Local free space: "
-                                    f"{local_file_data.free}")
-                return result
-            # transfer the file
-            try:
-                await self.async_file_transfer(operation, src, dst, progress_handler=progress_handler)
-                result.transferred = True
-            except Exception as e:
-                raise e
-            if hash_verify:
-                # check local file after copy
-                local_file_data = await self.check_local_file(dst)
-                # check if file was created
-                if local_file_data.hash:
-                    result.exists = True
-                # check if file has the same hash as source
-                if local_file_data.hash and local_file_data.hash == device_file_data.hash:
-                    result.verified = True
-                else:
-                    self.logger.warning(f"{dst} failed hash verification!")
-            return result
+            src_check = self.check_device_file
+            src_device_fs = device_fs
+            dst_check = self.check_local_file
+            dst_device_fs = None
         elif operation == 'put':
-            pass
+            src_check = self.check_local_file
+            src_device_fs = None
+            dst_check = self.check_device_file
+            dst_device_fs = device_fs
         else:
             raise ValueError(f"Operation {operation} does not supported")
+
+        if verify_hash:
+            # gather info on source side
+            src_file_data = await src_check(src_device_fs, src)
+            self.logger.debug(f"device file {src}: {src_file_data}")
+            if not src_file_data.hash:
+                # source file cannot be found, we are done here
+                self.logger.warning(f"Source file {src} does NOT exists!")
+                return result
+            # gather info on destination file
+            dst_file_data = await dst_check(dst_device_fs, dst)
+            self.logger.debug(f"local file {dst}: {dst_file_data}")
+            # check if destination file exists
+            if dst_file_data.hash:
+                result.exists = True
+            # check if destination file has the same hash as source
+            if dst_file_data.hash and src_file_data.hash == dst_file_data.hash:
+                result.verified = True
+                # no need to transfer file
+                self.logger.info(f"{dst} file already exists at destination and verified OK")
+                return result
+        if dst_file_data.hash and not overwrite:
+            # if hash does not match and we want to overwrite
+            self.logger.warning(f"{dst} file would NOT be overwritten!")
+            return result
+        # check if we have enough free space to transfer the file
+        if dst_file_data.free < src_file_data.size:
+            self.logger.warning(f"{dst} file is too big ({src_file_data.size}). Local free space: "
+                                f"{dst_file_data.free}")
+            return result
+        # transfer the file
+        try:
+            await self._async_file_transfer(operation, src, dst, progress_handler=progress_handler)
+            result.transferred = True
+        except Exception as e:
+            raise e
+        if verify_hash:
+            # check destination file after copy
+            dst_file_data = await dst_check(dst_device_fs, dst)
+            # check if file was created
+            if dst_file_data.hash:
+                result.exists = True
+            # check if file has the same hash as source
+            if dst_file_data.hash and dst_file_data.hash == src_file_data.hash:
+                result.verified = True
+            else:
+                self.logger.warning(f"{dst} failed hash verification!")
+        return result

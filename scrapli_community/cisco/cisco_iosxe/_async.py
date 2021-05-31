@@ -1,6 +1,6 @@
 """scrapli_community.cisco.cisco_iosxe._async"""
 import re
-from typing import Any
+from typing import Any, Optional
 from scrapli.driver.core.cisco_iosxe.async_driver import AsyncIOSXEDriver
 from scrapli_community.transport.asyncscp import AsyncSCPFeature, FileCheckResult
 
@@ -9,20 +9,23 @@ class AsyncCommunityIOSXEDriver(AsyncIOSXEDriver, AsyncSCPFeature):
     def __init__(self, *args: Any, **kwargs: Any):
         super().__init__(*args, **kwargs)
 
-    async def _ensure_scp_capability(self):
-        """Check if scp is enabled and enable it if not"""
+    async def _ensure_scp_capability(self, force: bool = True) -> bool:
+        pass
+
+    async def _cleanup_after_transfer(self) -> None:
+        pass
+
+    async def _get_device_fs(self) -> Optional[str]:
+        #  Enable mode needed
+        await self.acquire_priv(self.default_desired_privilege_level)
+        output = await self.send_command("dir | i Directory of (.*)")
+        m = re.match("Directory of (?P<fs>.*)", output.result, re.M)
+        if m:
+            return m.group('fs')
+        else:
+            return None
 
     async def check_device_file(self, device_fs: str, filename: str) -> FileCheckResult:
-        """
-        Check remote file and storage space
-        Returning empty hash means error accessing the file
-        Args:
-            device_fs: filesystem on device (e.g. disk0:/)
-            filename: file to examine
-
-        Returns:
-            FileCheckResult: returns hash, size and free space. Empty/zero on error for each.
-        """
         self.logger.info(f"Checking {device_fs}{filename} MD5 hash..")
         outputs = await self.send_commands([f"verify /md5 {device_fs}{filename}",
                                             f"dir {device_fs}{filename}"
