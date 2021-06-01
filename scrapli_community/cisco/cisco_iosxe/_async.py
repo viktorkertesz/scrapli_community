@@ -1,19 +1,56 @@
 """scrapli_community.cisco.cisco_iosxe._async"""
 import re
-from typing import Any, Optional
+from typing import Any, Optional, Union
 from scrapli.driver.core.cisco_iosxe.async_driver import AsyncIOSXEDriver
 from scrapli_community.transport.asyncscp import AsyncSCPFeature, FileCheckResult
 
 
 class AsyncCommunityIOSXEDriver(AsyncIOSXEDriver, AsyncSCPFeature):
     def __init__(self, *args: Any, **kwargs: Any):
+        self._scp_to_clean = []
         super().__init__(*args, **kwargs)
 
-    async def _ensure_scp_capability(self, force: bool = True) -> bool:
-        pass
+    async def _ensure_scp_capability(self, force: Union[bool, None] = True) -> Union[bool, None]:
+        self._scp_to_clean = []
+        result = None
+        if force is None:
+            return result
+        output = await self.send_command("sh run | i ^ip scp server enable")
+        outputs = set(output.result.split("\n"))  # let the multiline output capability open
+        # find missing commands
+        scp_to_apply = list(outputs ^ {"ip scp server enable"})
+        # check if we are good
+        if not scp_to_apply:
+            return result
+
+        # would need config but do we want it?
+        if not force:
+            result = False
+            return result
+
+        # prepare cleanup commands
+        self._scp_to_clean = [f"no {cmd}" for cmd in scp_to_apply]
+
+        # apply SCP enablement
+        output = await self.send_configs(scp_to_apply)
+
+        if output.failed:
+            # commands did not succeed
+            result = False
+            # try to revert
+            await self.send_configs(self._scp_to_clean)
+            self._scp_to_clean = []
+        else:
+            # device reconfigured for scp
+            result = True
+
+        return result
 
     async def _cleanup_after_transfer(self) -> None:
-        pass
+        # we assume that _scp_to_clean was populated by a previously called _ensure_scp_capability
+        if not self._scp_to_clean:
+            return
+        await self.send_configs(self._scp_to_clean)
 
     async def _get_device_fs(self) -> Optional[str]:
         #  Enable mode needed
