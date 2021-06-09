@@ -82,7 +82,7 @@ class AsyncSCPFeature(AsyncNetworkDriver, ABC):
         ...
 
     @abstractmethod
-    async def _ensure_scp_capability(self, force: Union[bool, None] = True) -> Union[bool, None]:
+    async def _ensure_scp_capability(self, force: Optional[bool] = False) -> Union[bool, None]:
         """
         Ensure device is capable of using scp.
 
@@ -90,7 +90,9 @@ class AsyncSCPFeature(AsyncNetworkDriver, ABC):
             force: Try reconfigure device if it doesn't support scp. If set to `None`, don't check anything.
 
         Returns:
-            bool: `True` if device supports scp now and we changed configuration. `None` if we didn't check or changed.
+            bool: `True` if device supports scp now and we changed configuration.
+                  `False` if device does not support scp or we didn't force configuration which was needed.
+                  `None` if we are good to proceed or we didn't check at all.
         """
         ...
 

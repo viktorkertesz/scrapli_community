@@ -10,26 +10,57 @@ class AsyncCommunityIOSXEDriver(AsyncIOSXEDriver, AsyncSCPFeature):
         self._scp_to_clean = []
         super().__init__(*args, **kwargs)
 
-    async def _ensure_scp_capability(self, force: Union[bool, None] = True) -> Union[bool, None]:
+    async def _ensure_scp_capability(self, force: Optional[bool] = False) -> Union[bool, None]:
         self._scp_to_clean = []
         result = None
         if force is None:
             return result
-        output = await self.send_command("sh run | i ^ip scp server enable")
-        outputs = set(output.result.split("\n"))  # let the multiline output capability open
-        # find missing commands
-        scp_to_apply = list(outputs ^ {"ip scp server enable"})
+        # intended configuration:
+        #
+        # ip scp server enable
+        # ip ssh window-size 65536
+        # ip tcp window-size 65536
+        #
+        # ip ssh window-size is supported from 16.6.1
+        # 65536 is a recommendation by Cisco
+        # https://www.cisco.com/c/en/us/td/docs/ios-xml/ios/sec_usr_ssh/configuration/xe-16-6/sec-usr-ssh-xe-16-6-book/sec-usr-ssh-xe-16-book_chapter_0110.html
+        window_size = 65536
+        output = await self.send_command("sh run all | i ^ip scp server enable|^ip tcp window|^ip ssh window")
+        outputs = output.result.split("\n")
+        # find missing or to be adjusted commands
+        scp_to_apply = []
+        self._scp_to_clean = []
+        # check if SCP is enabled
+        if "ip scp server enable" not in outputs:
+            scp_to_apply.append("ip scp server enable")
+            self._scp_to_clean.append("no ip scp server enable")
+        # check SSH window size. It might be not supported (old IOS)
+        ssh_window = [x for x in outputs if "ip ssh" in x][0]
+        if ssh_window:
+            m = re.search(r"ip ssh window-size (?P<ssh_window>\d+)", ssh_window)
+            ssh_window = int(m.group("ssh_window"))
+            if ssh_window < window_size:
+                scp_to_apply.append(f"ip ssh window-size {window_size}")
+                self._scp_to_clean.append(f"ip ssh window-size {ssh_window}")
+            # TCP window is only interesting if SCP window is supported
+            tcp_window = [x for x in outputs if "ip tcp" in x][0]
+            if tcp_window:
+                m = re.search(r"ip tcp window-size (?P<tcp_window>\d+)", tcp_window)
+                tcp_window = int(m.group("tcp_window"))
+                if tcp_window < window_size:
+                    scp_to_apply.append(f"ip tcp window-size {window_size}")
+                    self._scp_to_clean.append(f"ip tcp window-size {tcp_window}")
+
         # check if we are good
         if not scp_to_apply:
             return result
 
-        # would need config but do we want it?
-        if not force:
+        # would need configuration but do we want it?
+        # We require the minimum configuration to proceed (ip scp server enable)
+        if not force and "ip scp server enable" not in scp_to_apply:
             result = False
+            self._scp_to_clean = []
             return result
-
-        # prepare cleanup commands
-        self._scp_to_clean = [f"no {cmd}" for cmd in scp_to_apply]
 
         # apply SCP enablement
         output = await self.send_configs(scp_to_apply)
