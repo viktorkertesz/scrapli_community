@@ -2,7 +2,7 @@
 import re
 from typing import Any, Optional, Union
 from scrapli.driver.core.cisco_iosxe.async_driver import AsyncIOSXEDriver
-from scrapli_community.transport.asyncscp import AsyncSCPFeature, FileCheckResult
+from scrapli_community.features.asyncscp import AsyncSCPFeature, FileCheckResult
 
 
 class AsyncCommunityIOSXEDriver(AsyncIOSXEDriver, AsyncSCPFeature):
