@@ -270,14 +270,14 @@ class AsyncSCPFeature(AsyncNetworkDriver, ABC):
         if verify_hash:
             # gather info on source side
             src_file_data = await src_check(src_device_fs, src)
-            self.logger.debug(f"device file {src}: {src_file_data}")
+            self.logger.debug(f"Source file {src}: {src_file_data}")
             if not src_file_data.hash:
                 # source file cannot be found, we are done here
                 self.logger.warning(f"Source file {src} does NOT exists!")
                 return result
             # gather info on destination file
             dst_file_data = await dst_check(dst_device_fs, dst)
-            self.logger.debug(f"local file {dst}: {dst_file_data}")
+            self.logger.debug(f"Destination file {dst}: {dst_file_data}")
             # check if destination file exists
             if dst_file_data.hash:
                 result.exists = True
@@ -294,7 +294,7 @@ class AsyncSCPFeature(AsyncNetworkDriver, ABC):
 
         # check if we have enough free space to transfer the file
         if dst_file_data.free < src_file_data.size:
-            self.logger.warning(f"{dst} file is too big ({src_file_data.size}). Local free space: "
+            self.logger.warning(f"{dst} file is too big ({src_file_data.size}). Destination free space: "
                                 f"{dst_file_data.free}")
             return result
 
