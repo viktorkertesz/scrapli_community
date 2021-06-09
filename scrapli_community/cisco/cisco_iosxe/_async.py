@@ -57,7 +57,7 @@ class AsyncCommunityIOSXEDriver(AsyncIOSXEDriver, AsyncSCPFeature):
 
         # would need configuration but do we want it?
         # We require the minimum configuration to proceed (ip scp server enable)
-        if not force and "ip scp server enable" not in scp_to_apply:
+        if not force and "ip scp server enable" in scp_to_apply:
             result = False
             self._scp_to_clean = []
             return result

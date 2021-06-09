@@ -7,6 +7,8 @@ from dataclasses import dataclass
 from abc import ABC, abstractmethod
 from typing import Optional, Callable, Literal, TypedDict, Union
 from time import time
+
+import asyncssh
 from asyncssh import SSHClientConnectionOptions, connect, scp
 from scrapli.driver import AsyncNetworkDriver
 import aiofiles
@@ -31,7 +33,15 @@ class SCPConnectionParameterType(TypedDict):
     """
     Collection of authentication data needed to open a second SCP connection to the device.
 
-    (username, password, host, options)
+    username: SSH username
+
+    password: SSH password
+
+    host: SSH host
+
+    port: SSH port
+
+    options: current SSH connection options
     """
     username: str
     password: str
@@ -147,7 +157,7 @@ class AsyncSCPFeature(AsyncNetworkDriver, ABC):
 
     async def _async_file_transfer(self, operation: Literal['get', 'put'], src: str, dst: str,
                                    progress_handler: Optional[Callable] = None,
-                                   prevent_timeout: Optional[int] = None) -> None:
+                                   prevent_timeout: Optional[int] = None) -> bool:
         """
         SCP a file from device to localhost
 
@@ -161,7 +171,7 @@ class AsyncSCPFeature(AsyncNetworkDriver, ABC):
                              default is same as `timeout_ops`
 
         Returns:
-            None
+            bool: True on success
         """
 
         start_time = 0
@@ -195,16 +205,29 @@ class AsyncSCPFeature(AsyncNetworkDriver, ABC):
             host=self.host,
             options=self.transport.session._options
         )
-        async with connect(**scp_options) as scp_conn:
-            start_time = time()
-            if operation == 'get':
-                await scp((scp_conn, src), dst, progress_handler=timed_progress_handler, block_size=65536)
-            elif operation == 'put':
-                await scp(src, (scp_conn, dst), progress_handler=timed_progress_handler, block_size=65536)
-            else:
-                raise ValueError(f"Invalid operation: {operation}")
+        result = False
+        try:
+            async with connect(**scp_options) as scp_conn:
+                start_time = time()
+                if operation == 'get':
+                    await scp((scp_conn, src), dst, progress_handler=timed_progress_handler, block_size=65536)
+                elif operation == 'put':
+                    await scp(src, (scp_conn, dst), progress_handler=timed_progress_handler, block_size=65536)
+                else:
+                    raise ValueError(f"Invalid operation: {operation}")
+        except (asyncssh.SFTPError,) as e:
+            result = False
+            self.logger.warning(f"SCP error: {e}")
+        except Exception as e:
+            result = False
+            self.logger.warning(f"Other error: {e}")
+            raise e
+        else:
+            result = True
+        finally:
+            return result
 
-    async def file_transfer(self, operation: Literal['get', 'put'], src: str, dst: str, verify_hash: bool = True,
+    async def file_transfer(self, operation: Literal['get', 'put'], src: str, dst: str, verify: bool = True,
                             device_fs: str = "", overwrite: bool = False, force_scp_config: bool = False,
                             cleanup: bool = True, progress_handler: Optional[Callable] = None,
                             prevent_timeout: Optional[int] = None) -> FileTransferResult:
@@ -217,16 +240,19 @@ class AsyncSCPFeature(AsyncNetworkDriver, ABC):
         4. scp enablement on device (and tries to turn it on if needed)
         5. restore configuration after transfer if it was changed
         6. check MD5 after transfer
-        Transfer can be considered as success if the result has `verified` set to True.
+
         The file won't be transferred if the hash of the files on local/device are the same!
 
         Args:
             operation: put/get file to/from device
             src: source file name
             dst: destination file name
-            verify_hash: `True` if checksum verification is needed
+            verify: `True` if verification is needed (checksum, file existence, disk space)
             device_fs: IOS device filesystem (autodetect if empty)
             overwrite: If set to `True`, destination will be overwritten in case hash verification fails
+                       If set to `False`, destination file won't be overwritten.
+                       Beware: turning off `verify` will make this parameter ignored and destination will be
+                       overwritten regardless! (Logic is that if user does not care about checking, just copy it over)
             force_scp_config: If set to `True`, SCP function will be enabled in device configuration before transfer.
                               If set to `False`, SCP functionality will be checked but won't configure the device.
                               If set to `None`, capability won't even checked.
@@ -267,7 +293,7 @@ class AsyncSCPFeature(AsyncNetworkDriver, ABC):
         else:
             raise ValueError(f"Operation {operation} does not supported")
 
-        if verify_hash:
+        if verify:
             # gather info on source side
             src_file_data = await src_check(src_device_fs, src)
             self.logger.debug(f"Source file {src}: {src_file_data}")
@@ -287,16 +313,17 @@ class AsyncSCPFeature(AsyncNetworkDriver, ABC):
                 # no need to transfer file
                 self.logger.info(f"{dst} file already exists at destination and verified OK")
                 return result
-        if dst_file_data.hash and not overwrite:
-            # if hash does not match and we want to overwrite
-            self.logger.warning(f"{dst} file would NOT be overwritten!")
-            return result
 
-        # check if we have enough free space to transfer the file
-        if dst_file_data.free < src_file_data.size:
-            self.logger.warning(f"{dst} file is too big ({src_file_data.size}). Destination free space: "
-                                f"{dst_file_data.free}")
-            return result
+            # if hash does not match and we want to overwrite
+            if dst_file_data.hash and not overwrite:
+                self.logger.warning(f"{dst} file will NOT be overwritten!")
+                return result
+
+            # check if we have enough free space to transfer the file
+            if dst_file_data.free < src_file_data.size:
+                self.logger.warning(f"{dst} file is too big ({src_file_data.size}). Destination free space: "
+                                    f"{dst_file_data.free}")
+                return result
 
         # check if we are capable of transferring files
         scp_capability = await self._ensure_scp_capability(force=force_scp_config)
@@ -308,9 +335,9 @@ class AsyncSCPFeature(AsyncNetworkDriver, ABC):
 
         # transfer the file
         try:
-            await self._async_file_transfer(operation, src, dst, progress_handler=progress_handler,
-                                            prevent_timeout=prevent_timeout)
-            result.transferred = True
+            _transferred = await self._async_file_transfer(operation, src, dst, progress_handler=progress_handler,
+                                                           prevent_timeout=prevent_timeout)
+            result.transferred = _transferred
         except Exception as e:
             raise e
 
@@ -318,7 +345,7 @@ class AsyncSCPFeature(AsyncNetworkDriver, ABC):
         if cleanup and _need_to_cleanup:
             await self._cleanup_after_transfer()
 
-        if verify_hash:
+        if verify:
             # check destination file after copy
             dst_file_data = await dst_check(dst_device_fs, dst)
             # check if file was created
@@ -329,4 +356,8 @@ class AsyncSCPFeature(AsyncNetworkDriver, ABC):
                 result.verified = True
             else:
                 self.logger.warning(f"{dst} failed hash verification!")
+        else:
+            # assuming transfer created the file even if we did not check hash
+            if result.transferred:
+                result.exists = True
         return result
