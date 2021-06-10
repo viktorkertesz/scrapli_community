@@ -1,17 +1,17 @@
 """scrapli_community.features.asyncscp.extension"""
 import asyncio
 import hashlib
-import shutil
 import os
-from dataclasses import dataclass
+import shutil
 from abc import ABC, abstractmethod
-from typing import Optional, Callable, Literal, TypedDict, Union
+from dataclasses import dataclass
 from time import time
+from typing import Callable, Literal, Optional, TypedDict, Union
 
+import aiofiles
 import asyncssh
 from asyncssh import SSHClientConnectionOptions, connect, scp
 from scrapli.driver import AsyncNetworkDriver
-import aiofiles
 
 
 @dataclass()
@@ -23,6 +23,7 @@ class FileCheckResult:
 
     free - free space in bytes (0 on error)
     """
+
     hash: str
     size: int
     free: int
@@ -43,6 +44,7 @@ class SCPConnectionParameterType(TypedDict):
 
     options: current SSH connection options
     """
+
     username: str
     password: str
     host: str
@@ -53,12 +55,13 @@ class SCPConnectionParameterType(TypedDict):
 @dataclass()
 class FileTransferResult:
     """
-        exists - True if destination existed or created
+    exists - True if destination existed or created
 
-        transferred - True if file was transferred
+    transferred - True if file was transferred
 
-        verified - True if files are identical (hashes match)
+    verified - True if files are identical (hashes match)
     """
+
     exists: bool
     transferred: bool
     verified: bool
@@ -71,20 +74,21 @@ class AsyncSCPFeature(AsyncNetworkDriver, ABC):
     You need to implement device specific methods. If your device does not support that method, just return a value
     described in the abstract methods.
     """
+
     def __init__(self, *args, **kwargs):
         # \x0C is CTRL-L which usually refresh the prompt and harmless to send as keepalive
         self.keepalive_pattern = "\x0C".encode("UTF-8")
         super().__init__(*args, **kwargs)
 
     @abstractmethod
-    async def check_device_file(self, device_fs: Optional[str], filename: str) -> FileCheckResult:
+    async def check_device_file(self, device_fs: Optional[str], file_name: str) -> FileCheckResult:
         """
         Check remote file and storage space
         Returning empty hash means error accessing the file
 
         Args:
             device_fs: filesystem on device (e.g. disk0:/)
-            filename: file to examine
+            file_name: file to examine
 
         Returns:
             FileCheckResult
@@ -155,9 +159,14 @@ class AsyncSCPFeature(AsyncNetworkDriver, ABC):
             free_space = 0
         return FileCheckResult(hash=file_hash, size=file_size, free=free_space)
 
-    async def _async_file_transfer(self, operation: Literal['get', 'put'], src: str, dst: str,
-                                   progress_handler: Optional[Callable] = None,
-                                   prevent_timeout: Optional[int] = None) -> bool:
+    async def _async_file_transfer(
+        self,
+        operation: Literal["get", "put"],
+        src: str,
+        dst: str,
+        progress_handler: Optional[Callable] = None,
+        prevent_timeout: Optional[float] = None,
+    ) -> bool:
         """
         SCP a file from device to localhost
 
@@ -174,12 +183,12 @@ class AsyncSCPFeature(AsyncNetworkDriver, ABC):
             bool: True on success
         """
 
-        start_time = 0
+        start_time = 0.0
         if prevent_timeout is None:
             prevent_timeout = self.timeout_ops
 
         async def _prevent_timeout():
-            """Send enter to idle SSH channel to prevent timing out while transfering file"""
+            """Send enter to idle SSH channel to prevent timing out while transferring file"""
             self.logger.info("Sending keepalive to device")
             self.transport.write(self.keepalive_pattern)
 
@@ -203,16 +212,26 @@ class AsyncSCPFeature(AsyncNetworkDriver, ABC):
             password=self.auth_password,
             port=self.port,
             host=self.host,
-            options=self.transport.session._options
+            options=self.transport.session._options,
         )
         result = False
         try:
             async with connect(**scp_options) as scp_conn:
                 start_time = time()
-                if operation == 'get':
-                    await scp((scp_conn, src), dst, progress_handler=timed_progress_handler, block_size=65536)
-                elif operation == 'put':
-                    await scp(src, (scp_conn, dst), progress_handler=timed_progress_handler, block_size=65536)
+                if operation == "get":
+                    await scp(
+                        (scp_conn, src),
+                        dst,
+                        progress_handler=timed_progress_handler,
+                        block_size=65536,
+                    )
+                elif operation == "put":
+                    await scp(
+                        src,
+                        (scp_conn, dst),
+                        progress_handler=timed_progress_handler,
+                        block_size=65536,
+                    )
                 else:
                     raise ValueError(f"Invalid operation: {operation}")
         except (asyncssh.SFTPError,) as e:
@@ -227,10 +246,19 @@ class AsyncSCPFeature(AsyncNetworkDriver, ABC):
         finally:
             return result
 
-    async def file_transfer(self, operation: Literal['get', 'put'], src: str, dst: str, verify: bool = True,
-                            device_fs: str = "", overwrite: bool = False, force_scp_config: bool = False,
-                            cleanup: bool = True, progress_handler: Optional[Callable] = None,
-                            prevent_timeout: Optional[int] = None) -> FileTransferResult:
+    async def file_transfer(
+        self,
+        operation: Literal["get", "put"],
+        src: str,
+        dst: str,
+        verify: bool = True,
+        device_fs: Optional[str] = None,
+        overwrite: bool = False,
+        force_scp_config: bool = False,
+        cleanup: bool = True,
+        progress_handler: Optional[Callable] = None,
+        prevent_timeout: Optional[float] = None,
+    ) -> FileTransferResult:
         """
         Cisco IOS XE file transfer
         This transfer is idempotent and does the following checks before/after transfer:
@@ -271,6 +299,8 @@ class AsyncSCPFeature(AsyncNetworkDriver, ABC):
         dst_file_data = FileCheckResult("", 0, 0)
         if prevent_timeout is None:
             prevent_timeout = self.timeout_ops
+        dst_device_fs: Optional[str] = None
+        src_device_fs: Optional[str] = None
 
         # set destination filename to source if missing
         if dst == "" or dst == ".":
@@ -280,14 +310,12 @@ class AsyncSCPFeature(AsyncNetworkDriver, ABC):
         if not device_fs:
             device_fs = await self._get_device_fs()
 
-        if operation == 'get':
+        if operation == "get":
             src_check = self.check_device_file
             src_device_fs = device_fs
             dst_check = self.check_local_file
-            dst_device_fs = None
-        elif operation == 'put':
+        elif operation == "put":
             src_check = self.check_local_file
-            src_device_fs = None
             dst_check = self.check_device_file
             dst_device_fs = device_fs
         else:
@@ -321,8 +349,10 @@ class AsyncSCPFeature(AsyncNetworkDriver, ABC):
 
             # check if we have enough free space to transfer the file
             if dst_file_data.free < src_file_data.size:
-                self.logger.warning(f"{dst} file is too big ({src_file_data.size}). Destination free space: "
-                                    f"{dst_file_data.free}")
+                self.logger.warning(
+                    f"{dst} file is too big ({src_file_data.size}). Destination free space: "
+                    f"{dst_file_data.free}"
+                )
                 return result
 
         # check if we are capable of transferring files
@@ -335,8 +365,13 @@ class AsyncSCPFeature(AsyncNetworkDriver, ABC):
 
         # transfer the file
         try:
-            _transferred = await self._async_file_transfer(operation, src, dst, progress_handler=progress_handler,
-                                                           prevent_timeout=prevent_timeout)
+            _transferred = await self._async_file_transfer(
+                operation,
+                src,
+                dst,
+                progress_handler=progress_handler,
+                prevent_timeout=prevent_timeout,
+            )
             result.transferred = _transferred
         except Exception as e:
             raise e
