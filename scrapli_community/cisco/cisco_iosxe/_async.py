@@ -39,7 +39,10 @@ class AsyncCommunityIOSXEDriver(AsyncIOSXEDriver, AsyncSCPFeature):
             scp_to_apply.append("ip scp server enable")
             self._scp_to_clean.append("no ip scp server enable")
         # check SSH window size. It might be not supported (old IOS)
-        ssh_window_str = [x for x in outputs if "ip ssh" in x][0]
+        try:
+            ssh_window_str = [x for x in outputs if "ip ssh" in x][0]
+        except IndexError:
+            ssh_window_str = []
         if ssh_window_str:
             m = re.search(r"ip ssh window-size (?P<ssh_window>\d+)", ssh_window_str)
             ssh_window = int(m.group("ssh_window"))
@@ -47,7 +50,10 @@ class AsyncCommunityIOSXEDriver(AsyncIOSXEDriver, AsyncSCPFeature):
                 scp_to_apply.append(f"ip ssh window-size {window_size}")
                 self._scp_to_clean.append(f"ip ssh window-size {ssh_window}")
             # TCP window is only interesting if SCP window is supported
-            tcp_window_str = [x for x in outputs if "ip tcp" in x][0]
+            try:
+                tcp_window_str = [x for x in outputs if "ip tcp" in x][0]
+            except IndexError:
+                tcp_window_str = []
             if tcp_window_str:
                 m = re.search(r"ip tcp window-size (?P<tcp_window>\d+)", tcp_window_str)
                 tcp_window = int(m.group("tcp_window"))
