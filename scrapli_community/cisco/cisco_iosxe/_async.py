@@ -1,6 +1,6 @@
 """scrapli_community.cisco.cisco_iosxe._async"""
 import re
-from typing import Any, Optional, Union, List
+from typing import Any, List, Optional, Union
 
 from scrapli.driver.core.cisco_iosxe.async_driver import AsyncIOSXEDriver
 
@@ -12,7 +12,9 @@ class AsyncCommunityIOSXEDriver(AsyncIOSXEDriver, AsyncSCPFeature):
         self._scp_to_clean: List[str] = []
         super().__init__(*args, **kwargs)
 
-    async def _ensure_scp_capability(self, force: Optional[bool] = False) -> Union[bool, None]:
+    async def _ensure_scp_capability(  # noqa: C901
+        self, force: Optional[bool] = False
+    ) -> Union[bool, None]:
         self._scp_to_clean = []
         result = None
         if force is None:
@@ -42,10 +44,10 @@ class AsyncCommunityIOSXEDriver(AsyncIOSXEDriver, AsyncSCPFeature):
         try:
             ssh_window_str = [x for x in outputs if "ip ssh" in x][0]
         except IndexError:
-            ssh_window_str = []
+            ssh_window_str = ""
         if ssh_window_str:
             m = re.search(r"ip ssh window-size (?P<ssh_window>\d+)", ssh_window_str)
-            ssh_window = int(m.group("ssh_window"))
+            ssh_window = int(m.group("ssh_window") if m else 9999999)
             if ssh_window < window_size:
                 scp_to_apply.append(f"ip ssh window-size {window_size}")
                 self._scp_to_clean.append(f"ip ssh window-size {ssh_window}")
@@ -53,10 +55,10 @@ class AsyncCommunityIOSXEDriver(AsyncIOSXEDriver, AsyncSCPFeature):
             try:
                 tcp_window_str = [x for x in outputs if "ip tcp" in x][0]
             except IndexError:
-                tcp_window_str = []
+                tcp_window_str = ""
             if tcp_window_str:
                 m = re.search(r"ip tcp window-size (?P<tcp_window>\d+)", tcp_window_str)
-                tcp_window = int(m.group("tcp_window"))
+                tcp_window = int(m.group("tcp_window") if m else 9999999)
                 if tcp_window < window_size:
                     scp_to_apply.append(f"ip tcp window-size {window_size}")
                     self._scp_to_clean.append(f"ip tcp window-size {tcp_window}")
@@ -73,9 +75,9 @@ class AsyncCommunityIOSXEDriver(AsyncIOSXEDriver, AsyncSCPFeature):
             return result
 
         # apply SCP enablement
-        output = await self.send_configs(scp_to_apply)
+        output_apply = await self.send_configs(scp_to_apply)
 
-        if output.failed:
+        if output_apply.failed:
             # commands did not succeed
             result = False
             # try to revert
@@ -100,14 +102,18 @@ class AsyncCommunityIOSXEDriver(AsyncIOSXEDriver, AsyncSCPFeature):
         m = re.match("Directory of (?P<fs>.*)", output.result, re.M)
         if m:
             return m.group("fs")
-        else:
-            return None
+
+        return None
 
     async def check_device_file(self, device_fs: Optional[str], file_name: str) -> FileCheckResult:
         self.logger.info(f"Checking {device_fs}{file_name} MD5 hash..")
         outputs = await self.send_commands(
-            [f"verify /md5 {device_fs}{file_name}", f"dir {device_fs}{file_name}", f"dir {device_fs} | i free\)$"],
-            timeout_ops=300
+            [
+                f"verify /md5 {device_fs}{file_name}",
+                f"dir {device_fs}{file_name}",
+                fr"dir {device_fs} | i free\)$",
+            ],
+            timeout_ops=300,
         )
         m = re.search(r"^verify.*=\s*(?P<hash>\w{32})", outputs[0].result, re.M)
         if m:

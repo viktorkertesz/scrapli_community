@@ -3,16 +3,16 @@ import asyncio
 import hashlib
 import os
 import shutil
-from pathlib import PurePath
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
+from pathlib import PurePath
 from time import time
 from typing import Callable, Literal, Optional, TypedDict, Union
 
 import aiofiles
 import asyncssh
 from asyncssh import SSHClientConnectionOptions, connect, scp
-from scrapli.driver import AsyncNetworkDriver
+from scrapli.driver.base.base_driver import BaseDriver
 
 
 @dataclass()
@@ -68,12 +68,12 @@ class FileTransferResult:
     verified: bool
 
 
-class AsyncSCPFeature(AsyncNetworkDriver, ABC):
+class AsyncSCPFeature(BaseDriver, ABC):
     """
     This class extends a driver with SCP capabilities
 
-    You need to implement device specific methods. If your device does not support that method, just return a value
-    described in the abstract methods.
+    You need to implement device specific methods. If your device does not support that method,
+    just return a value described in the abstract methods.
     """
 
     def __init__(self, *args, **kwargs):
@@ -102,11 +102,13 @@ class AsyncSCPFeature(AsyncNetworkDriver, ABC):
         Ensure device is capable of using scp.
 
         Args:
-            force: Try reconfigure device if it doesn't support scp. If set to `None`, don't check anything.
+            force: Try reconfigure device if it doesn't support scp. If set to `None`, don't check
+                   anything.
 
         Returns:
             bool: `True` if device supports scp now and we changed configuration.
-                  `False` if device does not support scp or we didn't force configuration which was needed.
+                  `False` if device does not support scp or we didn't force configuration which was
+                          needed.
                   `None` if we are good to proceed or we didn't check at all.
         """
         ...
@@ -114,8 +116,8 @@ class AsyncSCPFeature(AsyncNetworkDriver, ABC):
     @abstractmethod
     async def _cleanup_after_transfer(self) -> None:
         """
-        Device specific cleanup procedure if needed. Useful to restore configuration in case _ensure_scp_capability
-        reconfigured the device.
+        Device specific cleanup procedure if needed. Useful to restore configuration in case
+        _ensure_scp_capability reconfigured the device.
 
         Returns:
             None
@@ -138,7 +140,8 @@ class AsyncSCPFeature(AsyncNetworkDriver, ABC):
         Check local file and storage space
 
         Args:
-            device_fs: If specified, this path will be checked for free space. Else path will be taken from `file_name`
+            device_fs: If specified, this path will be checked for free space. Else path will be
+                       taken from `file_name`
             file_name: local file to examine. This should be the full path of local file
 
         Returns:
@@ -160,7 +163,7 @@ class AsyncSCPFeature(AsyncNetworkDriver, ABC):
             free_space = 0
         return FileCheckResult(hash=file_hash, size=file_size, free=free_space)
 
-    async def _async_file_transfer(
+    async def _async_file_transfer(  # noqa: C901
         self,
         operation: Literal["get", "put"],
         src: str,
@@ -176,8 +179,8 @@ class AsyncSCPFeature(AsyncNetworkDriver, ABC):
             src: Source file name
             dst: Destination file name
             progress_handler: scp callback function to be able to follow the copy progress
-            prevent_timeout: interval in seconds when we send an empty command to keep SSH channel up,
-                             0 to turn it off,
+            prevent_timeout: interval in seconds when we send an empty command to keep SSH channel
+                             up, 0 to turn it off,
                              default is same as `timeout_ops`
 
         Returns:
@@ -213,7 +216,7 @@ class AsyncSCPFeature(AsyncNetworkDriver, ABC):
             password=self.auth_password,
             port=self.port,
             host=self.host,
-            options=self.transport.session._options,
+            options=self.transport.session._options,  # noqa: W0212
         )
         result = False
         try:
@@ -244,10 +247,10 @@ class AsyncSCPFeature(AsyncNetworkDriver, ABC):
             raise e
         else:
             result = True
-        finally:
-            return result
 
-    async def file_transfer(
+        return result
+
+    async def file_transfer(  # noqa: C901
         self,
         operation: Literal["get", "put"],
         src: str,
@@ -278,18 +281,22 @@ class AsyncSCPFeature(AsyncNetworkDriver, ABC):
             dst: destination file name
             verify: `True` if verification is needed (checksum, file existence, disk space)
             device_fs: IOS device filesystem (autodetect if empty)
-            overwrite: If set to `True`, destination will be overwritten in case hash verification fails
+            overwrite: If set to `True`, destination will be overwritten in case hash verification
+                       fails
                        If set to `False`, destination file won't be overwritten.
-                       Beware: turning off `verify` will make this parameter ignored and destination will be
-                       overwritten regardless! (Logic is that if user does not care about checking, just copy it over)
-            force_scp_config: If set to `True`, SCP function will be enabled in device configuration before transfer.
-                              If set to `False`, SCP functionality will be checked but won't configure the device.
+                       Beware: turning off `verify` will make this parameter ignored and destination
+                        will be overwritten regardless! (Logic is that if user does not care about
+                        checking, just copy it over)
+            force_scp_config: If set to `True`, SCP function will be enabled in device configuration
+                               before transfer.
+                              If set to `False`, SCP functionality will be checked but won't
+                              configure the device.
                               If set to `None`, capability won't even checked.
-            cleanup: If set to True, call the cleanup procedure to restore configuration if it was altered
+            cleanup: If set to True, call the cleanup procedure to restore configuration if it was
+                     altered
             progress_handler: function to call by file copy (used by asyncssh.scp function)
-            prevent_timeout: interval in seconds when we send an empty command to keep SSH channel up,
-                             0 to turn it off,
-                             default is same as `timeout_ops`
+            prevent_timeout: interval in seconds when we send an empty command to keep SSH channel
+                             up, 0 to turn it off, default is same as `timeout_ops`
 
         Returns:
             FileTransferResult
@@ -304,7 +311,7 @@ class AsyncSCPFeature(AsyncNetworkDriver, ABC):
         src_device_fs: Optional[str] = None
 
         # set destination filename to source if missing
-        if dst == "" or dst == ".":
+        if dst in ("", "."):
             # set destination to filename and strip all path
             dst = PurePath(src).name
 
@@ -362,8 +369,8 @@ class AsyncSCPFeature(AsyncNetworkDriver, ABC):
         if scp_capability is False:
             self.logger.error("SCP feature is not enabled on device!")
             return result
-        else:
-            _need_to_cleanup = scp_capability
+
+        _need_to_cleanup = scp_capability
 
         # transfer the file
         try:
