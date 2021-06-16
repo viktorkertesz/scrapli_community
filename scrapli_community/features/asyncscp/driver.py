@@ -3,6 +3,7 @@ import asyncio
 import hashlib
 import os
 import shutil
+from pathlib import PurePath
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from time import time
@@ -132,8 +133,7 @@ class AsyncSCPFeature(AsyncNetworkDriver, ABC):
         """
         ...
 
-    @classmethod
-    async def check_local_file(cls, device_fs: Optional[str], file_name: str) -> FileCheckResult:
+    async def check_local_file(self, device_fs: Optional[str], file_name: str) -> FileCheckResult:
         """
         Check local file and storage space
 
@@ -147,6 +147,7 @@ class AsyncSCPFeature(AsyncNetworkDriver, ABC):
         try:
             async with aiofiles.open(file_name, "rb") as f:
                 file_hash = hashlib.md5(await f.read()).hexdigest()
+                self.logger.info(f"'{file_name}' hash is '{file_hash}'")
             file_size = os.path.getsize(file_name)
         except FileNotFoundError:
             file_size = 0
@@ -304,7 +305,8 @@ class AsyncSCPFeature(AsyncNetworkDriver, ABC):
 
         # set destination filename to source if missing
         if dst == "" or dst == ".":
-            dst = src
+            # set destination to filename and strip all path
+            dst = PurePath(src).name
 
         # Detect default filesystem the device use
         if not device_fs:
@@ -319,19 +321,19 @@ class AsyncSCPFeature(AsyncNetworkDriver, ABC):
             dst_check = self.check_device_file
             dst_device_fs = device_fs
         else:
-            raise ValueError(f"Operation {operation} does not supported")
+            raise ValueError(f"Operation '{operation}' is not supported")
 
         if verify:
             # gather info on source side
             src_file_data = await src_check(src_device_fs, src)
-            self.logger.debug(f"Source file {src}: {src_file_data}")
+            self.logger.debug(f"Source file '{src}': {src_file_data}")
             if not src_file_data.hash:
                 # source file cannot be found, we are done here
-                self.logger.warning(f"Source file {src} does NOT exists!")
+                self.logger.warning(f"Source file '{src}' does NOT exists!")
                 return result
             # gather info on destination file
             dst_file_data = await dst_check(dst_device_fs, dst)
-            self.logger.debug(f"Destination file {dst}: {dst_file_data}")
+            self.logger.debug(f"Destination file '{dst}': {dst_file_data}")
             # check if destination file exists
             if dst_file_data.hash:
                 result.exists = True
@@ -339,18 +341,18 @@ class AsyncSCPFeature(AsyncNetworkDriver, ABC):
             if dst_file_data.hash and src_file_data.hash == dst_file_data.hash:
                 result.verified = True
                 # no need to transfer file
-                self.logger.info(f"{dst} file already exists at destination and verified OK")
+                self.logger.info(f"'{dst}' file already exists at destination and verified OK")
                 return result
 
             # if hash does not match and we want to overwrite
             if dst_file_data.hash and not overwrite:
-                self.logger.warning(f"{dst} file will NOT be overwritten!")
+                self.logger.warning(f"'{dst}' file will NOT be overwritten!")
                 return result
 
             # check if we have enough free space to transfer the file
             if dst_file_data.free < src_file_data.size:
                 self.logger.warning(
-                    f"{dst} file is too big ({src_file_data.size}). Destination free space: "
+                    f"'{dst}' file is too big ({src_file_data.size}). Destination free space: "
                     f"{dst_file_data.free}"
                 )
                 return result
@@ -390,7 +392,7 @@ class AsyncSCPFeature(AsyncNetworkDriver, ABC):
             if dst_file_data.hash and dst_file_data.hash == src_file_data.hash:
                 result.verified = True
             else:
-                self.logger.warning(f"{dst} failed hash verification!")
+                self.logger.warning(f"'{dst}' failed hash verification!")
         else:
             # assuming transfer created the file even if we did not check hash
             if result.transferred:

@@ -1,2 +1,3 @@
 scrapli>=2021.07.30a1
 aiofiles
+asyncssh

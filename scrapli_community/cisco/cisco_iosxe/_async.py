@@ -38,7 +38,7 @@ class AsyncCommunityIOSXEDriver(AsyncIOSXEDriver, AsyncSCPFeature):
         if "ip scp server enable" not in outputs:
             scp_to_apply.append("ip scp server enable")
             self._scp_to_clean.append("no ip scp server enable")
-        # check SSH window size. It might be not supported (old IOS)
+        # check SSH window size. It might not be supported (old IOS)
         try:
             ssh_window_str = [x for x in outputs if "ip ssh" in x][0]
         except IndexError:
@@ -106,11 +106,13 @@ class AsyncCommunityIOSXEDriver(AsyncIOSXEDriver, AsyncSCPFeature):
     async def check_device_file(self, device_fs: Optional[str], file_name: str) -> FileCheckResult:
         self.logger.info(f"Checking {device_fs}{file_name} MD5 hash..")
         outputs = await self.send_commands(
-            [f"verify /md5 {device_fs}{file_name}", f"dir {device_fs}{file_name}"], timeout_ops=300
+            [f"verify /md5 {device_fs}{file_name}", f"dir {device_fs}{file_name}", f"dir {device_fs} | i free\)$"],
+            timeout_ops=300
         )
         m = re.search(r"^verify.*=\s*(?P<hash>\w{32})", outputs[0].result, re.M)
         if m:
             file_hash = m.group("hash")
+            self.logger.info(f"'{file_name}' hash is '{file_hash}'")
         else:
             file_hash = ""
         m = re.search(r"^\s*\d+\s*[rw-]+\s*(?P<size>\d+).*" + file_name, outputs[1].result, re.M)
@@ -118,7 +120,7 @@ class AsyncCommunityIOSXEDriver(AsyncIOSXEDriver, AsyncSCPFeature):
             file_size = int(m.group("size"))
         else:
             file_size = 0
-        m = re.search(r"\((?P<free>\d+) bytes free\)", outputs[1].result, re.M)
+        m = re.search(r"\((?P<free>\d+) bytes free\)", outputs[2].result, re.M)
         if m:
             free_space = int(m.group("free"))
         else:
