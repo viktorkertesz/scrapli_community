@@ -1,0 +1,479 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1" />
+<meta name="generator" content="pdoc 0.9.2" />
+<title>scrapli_community.cisco.cisco_iosxe.async_driver API documentation</title>
+<meta name="description" content="scrapli_community.cisco.cisco_iosxe.async_driver" />
+<link rel="preload stylesheet" as="style" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/11.0.1/sanitize.min.css" integrity="sha256-PK9q560IAAa6WVRRh76LtCaI8pjTJ2z11v0miyNNjrs=" crossorigin>
+<link rel="preload stylesheet" as="style" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/11.0.1/typography.min.css" integrity="sha256-7l/o7C8jubJiy74VsKTidCy1yBkRtiUGbVkYBylBqUg=" crossorigin>
+<link rel="stylesheet preload" as="style" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/10.1.1/styles/github.min.css" crossorigin>
+<style>:root{--highlight-color:#fe9}.flex{display:flex !important}body{line-height:1.5em}#content{padding:20px}#sidebar{padding:30px;overflow:hidden}#sidebar > *:last-child{margin-bottom:2cm}.http-server-breadcrumbs{font-size:130%;margin:0 0 15px 0}#footer{font-size:.75em;padding:5px 30px;border-top:1px solid #ddd;text-align:right}#footer p{margin:0 0 0 1em;display:inline-block}#footer p:last-child{margin-right:30px}h1,h2,h3,h4,h5{font-weight:300}h1{font-size:2.5em;line-height:1.1em}h2{font-size:1.75em;margin:1em 0 .50em 0}h3{font-size:1.4em;margin:25px 0 10px 0}h4{margin:0;font-size:105%}h1:target,h2:target,h3:target,h4:target,h5:target,h6:target{background:var(--highlight-color);padding:.2em 0}a{color:#058;text-decoration:none;transition:color .3s ease-in-out}a:hover{color:#e82}.title code{font-weight:bold}h2[id^="header-"]{margin-top:2em}.ident{color:#900}pre code{background:#f8f8f8;font-size:.8em;line-height:1.4em}code{background:#f2f2f1;padding:1px 4px;overflow-wrap:break-word}h1 code{background:transparent}pre{background:#f8f8f8;border:0;border-top:1px solid #ccc;border-bottom:1px solid #ccc;margin:1em 0;padding:1ex}#http-server-module-list{display:flex;flex-flow:column}#http-server-module-list div{display:flex}#http-server-module-list dt{min-width:10%}#http-server-module-list p{margin-top:0}.toc ul,#index{list-style-type:none;margin:0;padding:0}#index code{background:transparent}#index h3{border-bottom:1px solid #ddd}#index ul{padding:0}#index h4{margin-top:.6em;font-weight:bold}@media (min-width:200ex){#index .two-column{column-count:2}}@media (min-width:300ex){#index .two-column{column-count:3}}dl{margin-bottom:2em}dl dl:last-child{margin-bottom:4em}dd{margin:0 0 1em 3em}#header-classes + dl > dd{margin-bottom:3em}dd dd{margin-left:2em}dd p{margin:10px 0}.name{background:#eee;font-weight:bold;font-size:.85em;padding:5px 10px;display:inline-block;min-width:40%}.name:hover{background:#e0e0e0}dt:target .name{background:var(--highlight-color)}.name > span:first-child{white-space:nowrap}.name.class > span:nth-child(2){margin-left:.4em}.inherited{color:#999;border-left:5px solid #eee;padding-left:1em}.inheritance em{font-style:normal;font-weight:bold}.desc h2{font-weight:400;font-size:1.25em}.desc h3{font-size:1em}.desc dt code{background:inherit}.source summary,.git-link-div{color:#666;text-align:right;font-weight:400;font-size:.8em;text-transform:uppercase}.source summary > *{white-space:nowrap;cursor:pointer}.git-link{color:inherit;margin-left:1em}.source pre{max-height:500px;overflow:auto;margin:0}.source pre code{font-size:12px;overflow:visible}.hlist{list-style:none}.hlist li{display:inline}.hlist li:after{content:',\2002'}.hlist li:last-child:after{content:none}.hlist .hlist{display:inline;padding-left:1em}img{max-width:100%}td{padding:0 .5em}.admonition{padding:.1em .5em;margin-bottom:1em}.admonition-title{font-weight:bold}.admonition.note,.admonition.info,.admonition.important{background:#aef}.admonition.todo,.admonition.versionadded,.admonition.tip,.admonition.hint{background:#dfd}.admonition.warning,.admonition.versionchanged,.admonition.deprecated{background:#fd4}.admonition.error,.admonition.danger,.admonition.caution{background:lightpink}</style>
+<style media="screen and (min-width: 700px)">@media screen and (min-width:700px){#sidebar{width:30%;height:100vh;overflow:auto;position:sticky;top:0}#content{width:70%;max-width:100ch;padding:3em 4em;border-left:1px solid #ddd}pre code{font-size:1em}.item .name{font-size:1em}main{display:flex;flex-direction:row-reverse;justify-content:flex-end}.toc ul ul,#index ul{padding-left:1.5em}.toc > ul > li{margin-top:.5em}}</style>
+<style media="print">@media print{#sidebar h1{page-break-before:always}.source{display:none}}@media print{*{background:transparent !important;color:#000 !important;box-shadow:none !important;text-shadow:none !important}a[href]:after{content:" (" attr(href) ")";font-size:90%}a[href][title]:after{content:none}abbr[title]:after{content:" (" attr(title) ")"}.ir a:after,a[href^="javascript:"]:after,a[href^="#"]:after{content:""}pre,blockquote{border:1px solid #999;page-break-inside:avoid}thead{display:table-header-group}tr,img{page-break-inside:avoid}img{max-width:100% !important}@page{margin:0.5cm}p,h2,h3{orphans:3;widows:3}h1,h2,h3,h4,h5,h6{page-break-after:avoid}}</style>
+<script defer src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/10.1.1/highlight.min.js" integrity="sha256-Uv3H6lx7dJmRfRvH8TH6kJD1TSK1aFcwgx+mdg3epi8=" crossorigin></script>
+<script>window.addEventListener('DOMContentLoaded', () => hljs.initHighlighting())</script>
+</head>
+<body>
+<main>
+<article id="content">
+<header>
+<h1 class="title">Module <code>scrapli_community.cisco.cisco_iosxe.async_driver</code></h1>
+</header>
+<section id="section-intro">
+<p>scrapli_community.cisco.cisco_iosxe.async_driver</p>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">&#34;&#34;&#34;scrapli_community.cisco.cisco_iosxe.async_driver&#34;&#34;&#34;
+import re
+from typing import Any, List, Optional, Union
+
+from scrapli.driver.core.cisco_iosxe.async_driver import AsyncIOSXEDriver
+
+from scrapli_community.features.asyncscp import AsyncSCPFeature, FileCheckResult
+
+
+class AsyncCommunityIOSXEDriver(AsyncSCPFeature, AsyncIOSXEDriver):
+    &#34;&#34;&#34;
+    AsyncSCPFeature adds `file_transfer` capability to the driver in a smart way.
+    &#34;&#34;&#34;
+
+    def __init__(self, *args: Any, **kwargs: Any):
+        self._scp_to_clean: List[str] = []
+        super().__init__(*args, **kwargs)
+
+    async def _ensure_scp_capability(  # noqa: C901
+        self, force: Optional[bool] = False
+    ) -&gt; Union[bool, None]:
+        self._scp_to_clean = []
+        result = None
+        if force is None:
+            return result
+        # intended configuration:
+        #
+        # ip scp server enable
+        # ip ssh window-size 65536
+        # ip tcp window-size 65536
+        #
+        # ip ssh window-size is supported from 16.6.1
+        # 65536 is a recommendation by Cisco
+        # https://www.cisco.com/c/en/us/td/docs/ios-xml/ios/sec_usr_ssh/configuration/xe-16-6/sec-usr-ssh-xe-16-6-book/sec-usr-ssh-xe-16-book_chapter_0110.html
+        window_size = 65536
+        output = await self.send_command(
+            &#34;sh run all | i ^ip scp server enable|^ip tcp window|^ip ssh window&#34;
+        )
+        outputs = output.result.split(&#34;\n&#34;)
+        # find missing or to be adjusted commands
+        scp_to_apply = []
+        self._scp_to_clean = []
+        # check if SCP is enabled
+        if &#34;ip scp server enable&#34; not in outputs:
+            scp_to_apply.append(&#34;ip scp server enable&#34;)
+            self._scp_to_clean.append(&#34;no ip scp server enable&#34;)
+        # check SSH window size. It might not be supported (old IOS)
+        try:
+            ssh_window_str = [x for x in outputs if &#34;ip ssh&#34; in x][0]
+        except IndexError:
+            ssh_window_str = &#34;&#34;
+        if ssh_window_str:
+            m = re.search(r&#34;ip ssh window-size (?P&lt;ssh_window&gt;\d+)&#34;, ssh_window_str)
+            ssh_window = int(m.group(&#34;ssh_window&#34;) if m else 9999999)
+            if ssh_window &lt; window_size:
+                scp_to_apply.append(f&#34;ip ssh window-size {window_size}&#34;)
+                self._scp_to_clean.append(f&#34;ip ssh window-size {ssh_window}&#34;)
+            # TCP window is only interesting if SCP window is supported
+            try:
+                tcp_window_str = [x for x in outputs if &#34;ip tcp&#34; in x][0]
+            except IndexError:
+                tcp_window_str = &#34;&#34;
+            if tcp_window_str:
+                m = re.search(r&#34;ip tcp window-size (?P&lt;tcp_window&gt;\d+)&#34;, tcp_window_str)
+                tcp_window = int(m.group(&#34;tcp_window&#34;) if m else 9999999)
+                if tcp_window &lt; window_size:
+                    scp_to_apply.append(f&#34;ip tcp window-size {window_size}&#34;)
+                    self._scp_to_clean.append(f&#34;ip tcp window-size {tcp_window}&#34;)
+
+        # check if we are good
+        if not scp_to_apply:
+            return result
+
+        # would need configuration but do we want it?
+        # We require the minimum configuration to proceed (ip scp server enable)
+        if not force and &#34;ip scp server enable&#34; in scp_to_apply:
+            result = False
+            self._scp_to_clean = []
+            return result
+
+        # apply SCP enablement
+        output_apply = await self.send_configs(scp_to_apply)
+
+        if output_apply.failed:
+            # commands did not succeed
+            result = False
+            # try to revert
+            await self.send_configs(self._scp_to_clean)
+            self._scp_to_clean = []
+        else:
+            # device reconfigured for scp
+            result = True
+
+        return result
+
+    async def _cleanup_after_transfer(self) -&gt; None:
+        # we assume that _scp_to_clean was populated by a previously called _ensure_scp_capability
+        if not self._scp_to_clean:
+            return
+        await self.send_configs(self._scp_to_clean)
+
+    async def _get_device_fs(self) -&gt; Optional[str]:
+        #  Enable mode needed
+        await self.acquire_priv(self.default_desired_privilege_level)
+        output = await self.send_command(&#34;dir | i Directory of (.*)&#34;)
+        m = re.match(&#34;Directory of (?P&lt;fs&gt;.*)&#34;, output.result, re.M)
+        if m:
+            return m.group(&#34;fs&#34;)
+
+        return None
+
+    async def check_device_file(self, device_fs: Optional[str], file_name: str) -&gt; FileCheckResult:
+        self.logger.info(f&#34;Checking {device_fs}{file_name} MD5 hash..&#34;)
+        outputs = await self.send_commands(
+            [
+                f&#34;verify /md5 {device_fs}{file_name}&#34;,
+                f&#34;dir {device_fs}{file_name}&#34;,
+                fr&#34;dir {device_fs} | i free\)$&#34;,
+            ],
+            timeout_ops=300,
+        )
+        m = re.search(r&#34;^verify.*=\s*(?P&lt;hash&gt;\w{32})&#34;, outputs[0].result, re.M)
+        if m:
+            file_hash = m.group(&#34;hash&#34;)
+            self.logger.info(f&#34;&#39;{file_name}&#39; hash is &#39;{file_hash}&#39;&#34;)
+        else:
+            file_hash = &#34;&#34;
+        m = re.search(r&#34;^\s*\d+\s*[rw-]+\s*(?P&lt;size&gt;\d+).*&#34; + file_name, outputs[1].result, re.M)
+        if m:
+            file_size = int(m.group(&#34;size&#34;))
+        else:
+            file_size = 0
+        m = re.search(r&#34;\((?P&lt;free&gt;\d+) bytes free\)&#34;, outputs[2].result, re.M)
+        if m:
+            free_space = int(m.group(&#34;free&#34;))
+        else:
+            free_space = 0
+        return FileCheckResult(hash=file_hash, size=file_size, free=free_space)</code></pre>
+</details>
+</section>
+<section>
+</section>
+<section>
+</section>
+<section>
+</section>
+<section>
+<h2 class="section-title" id="header-classes">Classes</h2>
+<dl>
+<dt id="scrapli_community.cisco.cisco_iosxe.async_driver.AsyncCommunityIOSXEDriver"><code class="flex name class">
+<span>class <span class="ident">AsyncCommunityIOSXEDriver</span></span>
+<span>(</span><span>*args: Any, **kwargs: Any)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>AsyncSCPFeature adds <code>file_transfer</code> capability to the driver in a smart way.</p>
+<p>AsyncIOSXEDriver Object</p>
+<p>Please see <code>scrapli.driver.base.base_driver.Driver</code> for all "base driver" arguments!</p>
+<h1 id="noqa-dar101">noqa: DAR101</h1>
+<h2 id="args">Args</h2>
+<dl>
+<dt><strong><code>privilege_levels</code></strong></dt>
+<dd>optional user provided privilege levels, if left None will default to
+scrapli standard privilege levels</dd>
+<dt><strong><code>default_desired_privilege_level</code></strong></dt>
+<dd>string of name of default desired priv, this is the
+priv level that is generally used to disable paging/set terminal width and things
+like that upon first login, and is also the priv level scrapli will try to acquire
+for normal "command" operations (<code>send_command</code>, <code>send_commands</code>)</dd>
+<dt><strong><code>auth_secondary</code></strong></dt>
+<dd>password to use for secondary authentication (enable)</dd>
+<dt><strong><code>on_open</code></strong></dt>
+<dd>callable that accepts the class instance as its only argument. this callable,
+if provided, is executed immediately after authentication is completed. Common use
+cases for this callable would be to disable paging or accept any kind of banner
+message that prompts a user upon connection</dd>
+<dt><strong><code>on_close</code></strong></dt>
+<dd>callable that accepts the class instance as its only argument. this callable,
+if provided, is executed immediately prior to closing the underlying transport.
+Common use cases for this callable would be to save configurations prior to exiting,
+or to logout properly to free up vtys or similar.</dd>
+<dt><strong><code>textfsm_platform</code></strong></dt>
+<dd>string name of textfsm parser platform</dd>
+<dt><strong><code>genie_platform</code></strong></dt>
+<dd>string name of cisco genie parser platform</dd>
+<dt><strong><code>failed_when_contains</code></strong></dt>
+<dd>List of strings that indicate a command/config has failed</dd>
+</dl>
+<h2 id="returns">Returns</h2>
+<p>None</p>
+<h2 id="raises">Raises</h2>
+<p>N/A</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">class AsyncCommunityIOSXEDriver(AsyncSCPFeature, AsyncIOSXEDriver):
+    &#34;&#34;&#34;
+    AsyncSCPFeature adds `file_transfer` capability to the driver in a smart way.
+    &#34;&#34;&#34;
+
+    def __init__(self, *args: Any, **kwargs: Any):
+        self._scp_to_clean: List[str] = []
+        super().__init__(*args, **kwargs)
+
+    async def _ensure_scp_capability(  # noqa: C901
+        self, force: Optional[bool] = False
+    ) -&gt; Union[bool, None]:
+        self._scp_to_clean = []
+        result = None
+        if force is None:
+            return result
+        # intended configuration:
+        #
+        # ip scp server enable
+        # ip ssh window-size 65536
+        # ip tcp window-size 65536
+        #
+        # ip ssh window-size is supported from 16.6.1
+        # 65536 is a recommendation by Cisco
+        # https://www.cisco.com/c/en/us/td/docs/ios-xml/ios/sec_usr_ssh/configuration/xe-16-6/sec-usr-ssh-xe-16-6-book/sec-usr-ssh-xe-16-book_chapter_0110.html
+        window_size = 65536
+        output = await self.send_command(
+            &#34;sh run all | i ^ip scp server enable|^ip tcp window|^ip ssh window&#34;
+        )
+        outputs = output.result.split(&#34;\n&#34;)
+        # find missing or to be adjusted commands
+        scp_to_apply = []
+        self._scp_to_clean = []
+        # check if SCP is enabled
+        if &#34;ip scp server enable&#34; not in outputs:
+            scp_to_apply.append(&#34;ip scp server enable&#34;)
+            self._scp_to_clean.append(&#34;no ip scp server enable&#34;)
+        # check SSH window size. It might not be supported (old IOS)
+        try:
+            ssh_window_str = [x for x in outputs if &#34;ip ssh&#34; in x][0]
+        except IndexError:
+            ssh_window_str = &#34;&#34;
+        if ssh_window_str:
+            m = re.search(r&#34;ip ssh window-size (?P&lt;ssh_window&gt;\d+)&#34;, ssh_window_str)
+            ssh_window = int(m.group(&#34;ssh_window&#34;) if m else 9999999)
+            if ssh_window &lt; window_size:
+                scp_to_apply.append(f&#34;ip ssh window-size {window_size}&#34;)
+                self._scp_to_clean.append(f&#34;ip ssh window-size {ssh_window}&#34;)
+            # TCP window is only interesting if SCP window is supported
+            try:
+                tcp_window_str = [x for x in outputs if &#34;ip tcp&#34; in x][0]
+            except IndexError:
+                tcp_window_str = &#34;&#34;
+            if tcp_window_str:
+                m = re.search(r&#34;ip tcp window-size (?P&lt;tcp_window&gt;\d+)&#34;, tcp_window_str)
+                tcp_window = int(m.group(&#34;tcp_window&#34;) if m else 9999999)
+                if tcp_window &lt; window_size:
+                    scp_to_apply.append(f&#34;ip tcp window-size {window_size}&#34;)
+                    self._scp_to_clean.append(f&#34;ip tcp window-size {tcp_window}&#34;)
+
+        # check if we are good
+        if not scp_to_apply:
+            return result
+
+        # would need configuration but do we want it?
+        # We require the minimum configuration to proceed (ip scp server enable)
+        if not force and &#34;ip scp server enable&#34; in scp_to_apply:
+            result = False
+            self._scp_to_clean = []
+            return result
+
+        # apply SCP enablement
+        output_apply = await self.send_configs(scp_to_apply)
+
+        if output_apply.failed:
+            # commands did not succeed
+            result = False
+            # try to revert
+            await self.send_configs(self._scp_to_clean)
+            self._scp_to_clean = []
+        else:
+            # device reconfigured for scp
+            result = True
+
+        return result
+
+    async def _cleanup_after_transfer(self) -&gt; None:
+        # we assume that _scp_to_clean was populated by a previously called _ensure_scp_capability
+        if not self._scp_to_clean:
+            return
+        await self.send_configs(self._scp_to_clean)
+
+    async def _get_device_fs(self) -&gt; Optional[str]:
+        #  Enable mode needed
+        await self.acquire_priv(self.default_desired_privilege_level)
+        output = await self.send_command(&#34;dir | i Directory of (.*)&#34;)
+        m = re.match(&#34;Directory of (?P&lt;fs&gt;.*)&#34;, output.result, re.M)
+        if m:
+            return m.group(&#34;fs&#34;)
+
+        return None
+
+    async def check_device_file(self, device_fs: Optional[str], file_name: str) -&gt; FileCheckResult:
+        self.logger.info(f&#34;Checking {device_fs}{file_name} MD5 hash..&#34;)
+        outputs = await self.send_commands(
+            [
+                f&#34;verify /md5 {device_fs}{file_name}&#34;,
+                f&#34;dir {device_fs}{file_name}&#34;,
+                fr&#34;dir {device_fs} | i free\)$&#34;,
+            ],
+            timeout_ops=300,
+        )
+        m = re.search(r&#34;^verify.*=\s*(?P&lt;hash&gt;\w{32})&#34;, outputs[0].result, re.M)
+        if m:
+            file_hash = m.group(&#34;hash&#34;)
+            self.logger.info(f&#34;&#39;{file_name}&#39; hash is &#39;{file_hash}&#39;&#34;)
+        else:
+            file_hash = &#34;&#34;
+        m = re.search(r&#34;^\s*\d+\s*[rw-]+\s*(?P&lt;size&gt;\d+).*&#34; + file_name, outputs[1].result, re.M)
+        if m:
+            file_size = int(m.group(&#34;size&#34;))
+        else:
+            file_size = 0
+        m = re.search(r&#34;\((?P&lt;free&gt;\d+) bytes free\)&#34;, outputs[2].result, re.M)
+        if m:
+            free_space = int(m.group(&#34;free&#34;))
+        else:
+            free_space = 0
+        return FileCheckResult(hash=file_hash, size=file_size, free=free_space)</code></pre>
+</details>
+<h3>Ancestors</h3>
+<ul class="hlist">
+<li><a title="scrapli_community.features.asyncscp.driver.AsyncSCPFeature" href="../../features/asyncscp/driver.html#scrapli_community.features.asyncscp.driver.AsyncSCPFeature">AsyncSCPFeature</a></li>
+<li>scrapli.driver.core.cisco_iosxe.async_driver.AsyncIOSXEDriver</li>
+<li>scrapli.driver.network.async_driver.AsyncNetworkDriver</li>
+<li>scrapli.driver.generic.async_driver.AsyncGenericDriver</li>
+<li>scrapli.driver.base.async_driver.AsyncDriver</li>
+<li>scrapli.driver.base.base_driver.BaseDriver</li>
+<li>abc.ABC</li>
+<li>scrapli.driver.generic.base_driver.BaseGenericDriver</li>
+<li>scrapli.driver.network.base_driver.BaseNetworkDriver</li>
+</ul>
+<h3>Class variables</h3>
+<dl>
+<dt id="scrapli_community.cisco.cisco_iosxe.async_driver.AsyncCommunityIOSXEDriver.auth_secondary"><code class="name">var <span class="ident">auth_secondary</span> : str</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="scrapli_community.cisco.cisco_iosxe.async_driver.AsyncCommunityIOSXEDriver.failed_when_contains"><code class="name">var <span class="ident">failed_when_contains</span> : List[str]</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="scrapli_community.cisco.cisco_iosxe.async_driver.AsyncCommunityIOSXEDriver.genie_platform"><code class="name">var <span class="ident">genie_platform</span> : str</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="scrapli_community.cisco.cisco_iosxe.async_driver.AsyncCommunityIOSXEDriver.logger"><code class="name">var <span class="ident">logger</span> : logging.LoggerAdapter</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="scrapli_community.cisco.cisco_iosxe.async_driver.AsyncCommunityIOSXEDriver.privilege_levels"><code class="name">var <span class="ident">privilege_levels</span> : Dict[str, scrapli.driver.network.base_driver.PrivilegeLevel]</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="scrapli_community.cisco.cisco_iosxe.async_driver.AsyncCommunityIOSXEDriver.textfsm_platform"><code class="name">var <span class="ident">textfsm_platform</span> : str</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+</dl>
+<h3>Instance variables</h3>
+<dl>
+<dt id="scrapli_community.cisco.cisco_iosxe.async_driver.AsyncCommunityIOSXEDriver.comms_prompt_pattern"><code class="name">var <span class="ident">comms_prompt_pattern</span> : str</code></dt>
+<dd>
+<div class="desc"><p>Getter for <code>comms_prompt_pattern</code> attribute</p>
+<h2 id="args">Args</h2>
+<p>N/A</p>
+<h2 id="returns">Returns</h2>
+<dl>
+<dt><code>str</code></dt>
+<dd>comms_prompt_pattern string</dd>
+</dl>
+<h2 id="raises">Raises</h2>
+<p>N/A</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">@property
+def comms_prompt_pattern(self) -&gt; str:
+    &#34;&#34;&#34;
+    Getter for `comms_prompt_pattern` attribute
+
+    Args:
+        N/A
+
+    Returns:
+        str: comms_prompt_pattern string
+
+    Raises:
+        N/A
+
+    &#34;&#34;&#34;
+    return self._base_channel_args.comms_prompt_pattern</code></pre>
+</details>
+</dd>
+</dl>
+<h3>Inherited members</h3>
+<ul class="hlist">
+<li><code><b><a title="scrapli_community.features.asyncscp.driver.AsyncSCPFeature" href="../../features/asyncscp/driver.html#scrapli_community.features.asyncscp.driver.AsyncSCPFeature">AsyncSCPFeature</a></b></code>:
+<ul class="hlist">
+<li><code><a title="scrapli_community.features.asyncscp.driver.AsyncSCPFeature.check_device_file" href="../../features/asyncscp/driver.html#scrapli_community.features.asyncscp.driver.AsyncSCPFeature.check_device_file">check_device_file</a></code></li>
+<li><code><a title="scrapli_community.features.asyncscp.driver.AsyncSCPFeature.check_local_file" href="../../features/asyncscp/driver.html#scrapli_community.features.asyncscp.driver.AsyncSCPFeature.check_local_file">check_local_file</a></code></li>
+<li><code><a title="scrapli_community.features.asyncscp.driver.AsyncSCPFeature.file_transfer" href="../../features/asyncscp/driver.html#scrapli_community.features.asyncscp.driver.AsyncSCPFeature.file_transfer">file_transfer</a></code></li>
+</ul>
+</li>
+</ul>
+</dd>
+</dl>
+</section>
+</article>
+<nav id="sidebar">
+<h1>Index</h1>
+<div class="toc">
+<ul></ul>
+</div>
+<ul id="index">
+<li><h3>Super-module</h3>
+<ul>
+<li><code><a title="scrapli_community.cisco.cisco_iosxe" href="index.html">scrapli_community.cisco.cisco_iosxe</a></code></li>
+</ul>
+</li>
+<li><h3><a href="#header-classes">Classes</a></h3>
+<ul>
+<li>
+<h4><code><a title="scrapli_community.cisco.cisco_iosxe.async_driver.AsyncCommunityIOSXEDriver" href="#scrapli_community.cisco.cisco_iosxe.async_driver.AsyncCommunityIOSXEDriver">AsyncCommunityIOSXEDriver</a></code></h4>
+<ul class="">
+<li><code><a title="scrapli_community.cisco.cisco_iosxe.async_driver.AsyncCommunityIOSXEDriver.auth_secondary" href="#scrapli_community.cisco.cisco_iosxe.async_driver.AsyncCommunityIOSXEDriver.auth_secondary">auth_secondary</a></code></li>
+<li><code><a title="scrapli_community.cisco.cisco_iosxe.async_driver.AsyncCommunityIOSXEDriver.comms_prompt_pattern" href="#scrapli_community.cisco.cisco_iosxe.async_driver.AsyncCommunityIOSXEDriver.comms_prompt_pattern">comms_prompt_pattern</a></code></li>
+<li><code><a title="scrapli_community.cisco.cisco_iosxe.async_driver.AsyncCommunityIOSXEDriver.failed_when_contains" href="#scrapli_community.cisco.cisco_iosxe.async_driver.AsyncCommunityIOSXEDriver.failed_when_contains">failed_when_contains</a></code></li>
+<li><code><a title="scrapli_community.cisco.cisco_iosxe.async_driver.AsyncCommunityIOSXEDriver.genie_platform" href="#scrapli_community.cisco.cisco_iosxe.async_driver.AsyncCommunityIOSXEDriver.genie_platform">genie_platform</a></code></li>
+<li><code><a title="scrapli_community.cisco.cisco_iosxe.async_driver.AsyncCommunityIOSXEDriver.logger" href="#scrapli_community.cisco.cisco_iosxe.async_driver.AsyncCommunityIOSXEDriver.logger">logger</a></code></li>
+<li><code><a title="scrapli_community.cisco.cisco_iosxe.async_driver.AsyncCommunityIOSXEDriver.privilege_levels" href="#scrapli_community.cisco.cisco_iosxe.async_driver.AsyncCommunityIOSXEDriver.privilege_levels">privilege_levels</a></code></li>
+<li><code><a title="scrapli_community.cisco.cisco_iosxe.async_driver.AsyncCommunityIOSXEDriver.textfsm_platform" href="#scrapli_community.cisco.cisco_iosxe.async_driver.AsyncCommunityIOSXEDriver.textfsm_platform">textfsm_platform</a></code></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</nav>
+</main>
+<footer id="footer">
+<p>Generated by <a href="https://pdoc3.github.io/pdoc"><cite>pdoc</cite> 0.9.2</a>.</p>
+</footer>
+</body>
+</html>

@@ -8,6 +8,10 @@ from scrapli_community.features.asyncscp import AsyncSCPFeature, FileCheckResult
 
 
 class AsyncCommunityIOSXEDriver(AsyncIOSXEDriver, AsyncSCPFeature):
+    """
+    AsyncSCPFeature adds `file_transfer` capability to the driver in a smart way.
+    """
+
     def __init__(self, *args: Any, **kwargs: Any):
         self._scp_to_clean: List[str] = []
         super().__init__(*args, **kwargs)
