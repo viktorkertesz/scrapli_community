@@ -6,8 +6,8 @@ from scrapli.driver.core.cisco_iosxe.base_driver import PRIVS as DEFAULT_PRIVILE
 from scrapli.driver.core.cisco_iosxe.sync_driver import iosxe_on_close as default_sync_on_close
 from scrapli.driver.core.cisco_iosxe.sync_driver import iosxe_on_open as default_sync_on_open
 
-from scrapli_community.cisco.cisco_iosxe._async import AsyncCommunityIOSXEDriver
-from scrapli_community.cisco.cisco_iosxe.sync import CommunityIOSXEDriver
+from scrapli_community.cisco.cisco_iosxe.async_driver import AsyncCommunityIOSXEDriver
+from scrapli_community.cisco.cisco_iosxe.sync_driver import CommunityIOSXEDriver
 
 SCRAPLI_PLATFORM = {
     "driver_type": {
